@@ -6,6 +6,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
@@ -80,7 +81,7 @@ def logout(request: Request):
 def list_rooms(db: Session = Depends(get_db)):
     rooms = (
         db.query(Room)
-        .filter(Room.expires_at > utcnow())
+        .filter(or_(Room.expires_at.is_(None), Room.expires_at > utcnow()))
         .order_by(Room.created_at.desc())
         .all()
     )

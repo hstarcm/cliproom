@@ -25,7 +25,7 @@ authoritative on conflict.
 | POST | `/api/admin/logout` | session | destroy session server-side |
 | GET | `/api/admin/rooms` | admin only | active rooms `[{room_uuid, item_count, disk_usage, expires_at, created_by}]` |
 | DELETE | `/api/admin/rooms/{room_uuid}` | admin only | force-terminate any room + files (members then get 404) |
-| POST | `/api/rooms` | admin or guest session | `{ttl: "1h"\|"24h"\|"7d"}` → `{room_id, share_url, expires_at}`; guest with active room → 409 |
+| POST | `/api/rooms` | admin or guest session | `{ttl: "1h"\|"24h"\|"7d"\|"<n>m\|h\|d"\|"forever", max_file_mb?: int}` → `{room_id, share_url, expires_at}` (expires_at null for forever); guest with active room → 409; custom TTL bounded 1m–365d; max_file_mb 1–global cap |
 | DELETE | `/api/rooms/{room_uuid}` | admin (any) or guest (own) | terminate room + files |
 | GET | `/api/rooms/{room_id}` | member (link) | `{expires_at, item_count}` |
 | POST | `/api/rooms/{room_id}/join` | member token | `{name}` → `{member_id, name, color}` |

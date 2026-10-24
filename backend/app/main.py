@@ -51,6 +51,53 @@ async def _presence_sweeper_loop():
             pass
 
 
+def _migrate(engine) -> None:
+    """Idempotent in-place upgrades for pre-AC20 databases: add max_file_mb
+    and relax ttl_seconds/expires_at to nullable (SQLite needs a table
+    rebuild for that)."""
+    from sqlalchemy import text
+
+    with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+        cols = {row[1]: row[3] for row in conn.execute(text("PRAGMA table_info(rooms)"))}
+        if not cols:
+            return  # table not created yet (create_all handles it)
+        if cols.get("max_file_mb") is None:
+            conn.execute(text("ALTER TABLE rooms ADD COLUMN max_file_mb INTEGER"))
+        if cols.get("expires_at") == 1 or cols.get("ttl_seconds") == 1:  # NOT NULL → rebuild
+            conn.execute(text("PRAGMA foreign_keys=OFF"))
+            conn.execute(
+                text(
+                    """
+                    CREATE TABLE rooms_migrate (
+                      room_id VARCHAR(32) NOT NULL PRIMARY KEY,
+                      room_uuid VARCHAR(32) NOT NULL UNIQUE,
+                      created_by VARCHAR(8) NOT NULL CHECK (created_by IN ('admin','guest')),
+                      created_at DATETIME,
+                      ttl_seconds INTEGER,
+                      expires_at DATETIME,
+                      max_file_mb INTEGER,
+                      last_activity_at DATETIME
+                    )
+                    """
+                )
+            )
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO rooms_migrate (room_id, room_uuid, created_by, created_at,
+                                               ttl_seconds, expires_at, max_file_mb, last_activity_at)
+                    SELECT room_id, room_uuid, created_by, created_at,
+                           ttl_seconds, expires_at, max_file_mb, last_activity_at
+                    FROM rooms
+                    """
+                )
+            )
+            conn.execute(text("DROP TABLE rooms"))
+            conn.execute(text("ALTER TABLE rooms_migrate RENAME TO rooms"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_rooms_expires_at ON rooms (expires_at)"))
+            conn.execute(text("PRAGMA foreign_keys=ON"))
+
+
 def create_app() -> FastAPI:
     global _state_app
     settings = get_settings()
@@ -64,6 +111,7 @@ def create_app() -> FastAPI:
 
         engine, _ = init_engine(settings.db_path)
         Base.metadata.create_all(engine)
+        _migrate(engine)
 
         # SR-3 rate limiters (clock injectable in tests via monkeypatch)
         app.state.login_limiter = RateLimiter(

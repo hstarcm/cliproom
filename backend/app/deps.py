@@ -60,9 +60,12 @@ def set_session_cookie(response: Response, sid: str) -> None:
 
 
 def get_room_or_404(room_id: str, db: Session) -> Room:
-    """FR-2: unknown/expired/deleted room → generic 404, never 403."""
+    """FR-2: unknown/expired/deleted room → generic 404, never 403.
+    Forever rooms (expires_at NULL) never expire."""
     room = db.get(Room, room_id)
-    if room is None or room.expires_at <= utcnow():
+    if room is None:
+        raise HTTPException(status_code=404, detail="Not Found")
+    if room.expires_at is not None and room.expires_at <= utcnow():
         raise HTTPException(status_code=404, detail="Not Found")
     return room
 

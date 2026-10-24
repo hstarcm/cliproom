@@ -33,7 +33,8 @@ from ..deps import (
 from ..ids import new_uuid
 from ..models import Item, Member, Room, iso_utc
 from ..rooms import (
-    TTL_CHOICES,
+    effective_max_file_mb,
+    parse_ttl,
     create_room as create_room_row,
     get_active_room,
     guest_active_room,
@@ -63,12 +64,27 @@ async def _presence(room_id: str) -> list[dict]:
 
 class CreateRoomBody(BaseModel):
     ttl: str
+    max_file_mb: int | None = None
 
     @field_validator("ttl")
     @classmethod
     def ttl_valid(cls, v: str) -> str:
-        if v not in TTL_CHOICES:
-            raise ValueError("ttl must be one of: 1h, 24h, 7d")
+        try:
+            parse_ttl(v)
+        except ValueError as exc:
+            raise ValueError(str(exc)) from None
+        return v
+
+    @field_validator("max_file_mb")
+    @classmethod
+    def cap_valid(cls, v: int | None) -> int | None:
+        if v is None:
+            return v
+        from ..config import get_settings
+
+        global_cap = get_settings().max_file_mb
+        if not (1 <= v <= global_cap):
+            raise ValueError(f"max_file_mb must be 1–{global_cap} (the global cap)")
         return v
 
 
@@ -87,11 +103,13 @@ def create_room_route(
             status_code=409,
             content={"detail": "Guest already has an active room — delete it first"},
         )
-    room = create_room_row(db, created_by=session["role"], ttl_label=body.ttl)
+    room = create_room_row(
+        db, created_by=session["role"], ttl_label=body.ttl, max_file_mb=body.max_file_mb
+    )
     return {
         "room_id": room.room_id,
         "share_url": f"{settings.base_url}/r/{room.room_id}",
-        "expires_at": iso_utc(room.expires_at),
+        "expires_at": iso_utc(room.expires_at),  # null for forever rooms
     }
 
 
@@ -257,7 +275,7 @@ async def upload_file(
                         content={"detail": f"file type .{ext or '?'} not allowed"},
                     )
 
-            max_bytes = settings.max_file_mb * 1024 * 1024
+            max_bytes = effective_max_file_mb(settings, room) * 1024 * 1024  # FR-13a
             file_id = new_uuid()
             with span("persist_file"):
                 dest_dir = room_dir(settings, room.room_id)
@@ -280,7 +298,7 @@ async def upload_file(
                 os.remove(dest_path)
                 return JSONResponse(
                     status_code=413,
-                    content={"detail": f"file exceeds the {settings.max_file_mb} MB limit"},
+                    content={"detail": f"file exceeds this room's {effective_max_file_mb(settings, room)} MB limit"},
                 )
 
             item = Item(

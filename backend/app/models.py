@@ -42,8 +42,10 @@ class Room(Base):
         String(8), CheckConstraint("created_by IN ('admin','guest')")
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
-    ttl_seconds: Mapped[int] = mapped_column(Integer)
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    # ttl_seconds / expires_at are NULL for 'forever' rooms (FR-19)
+    ttl_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    max_file_mb: Mapped[int | None] = mapped_column(Integer, nullable=True)  # FR-13a
     last_activity_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow
     )

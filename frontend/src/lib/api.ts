@@ -79,14 +79,16 @@ export const api = {
     return json(r);
   },
 
-  createRoom: async (ttl: "1h" | "24h" | "7d") => {
+  createRoom: async (ttl: string, maxFileMb?: number) => {
+    const body: Record<string, unknown> = { ttl };
+    if (maxFileMb !== undefined) body.max_file_mb = maxFileMb;
     const r = await fetch("/api/rooms", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...CSRF },
       credentials: "include",
-      body: JSON.stringify({ ttl }),
+      body: JSON.stringify(body),
     });
-    return (await json(r)) as { room_id: string; share_url: string; expires_at: string };
+    return (await json(r)) as { room_id: string; share_url: string; expires_at: string | null };
   },
 
   deleteRoom: async (roomUuidOrId: string) => {

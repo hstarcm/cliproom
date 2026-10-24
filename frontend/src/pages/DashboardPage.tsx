@@ -12,7 +12,9 @@ export default function DashboardPage() {
   const [rooms, setRooms] = useState<AdminRoom[] | null>(null);
   const [roleHint, setRoleHint] = useState<string>(role ?? "");
   const [created, setCreated] = useState<{ room_id: string; share_url: string } | null>(null);
-  const [ttl, setTtl] = useState<"1h" | "24h" | "7d">("24h");
+  const [ttlChoice, setTtlChoice] = useState<"1h" | "24h" | "7d" | "forever" | "custom">("24h");
+  const [customTtl, setCustomTtl] = useState("12h");
+  const [maxMb, setMaxMb] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [guestRoom, setGuestRoom] = useState<{ room_id: string; share_url: string } | null>(null);
 
@@ -38,7 +40,9 @@ export default function DashboardPage() {
   const create = async () => {
     setError(null);
     try {
-      const room = await api.createRoom(ttl);
+      const ttl = ttlChoice === "custom" ? customTtl.trim() : ttlChoice;
+      const cap = maxMb.trim() ? Number.parseInt(maxMb, 10) : undefined;
+      const room = await api.createRoom(ttl, cap);
       setCreated(room);
       if (!roleHint || roleHint === "guest") {
         setGuestRoom(room);
@@ -92,11 +96,37 @@ export default function DashboardPage() {
         <h2>Create a room</h2>
         <p>
           TTL:{" "}
-          <select value={ttl} onChange={(e) => setTtl(e.target.value as any)} aria-label="TTL">
+          <select
+            value={ttlChoice}
+            onChange={(e) => setTtlChoice(e.target.value as typeof ttlChoice)}
+            aria-label="TTL"
+          >
             <option value="1h">1 hour</option>
             <option value="24h">24 hours</option>
             <option value="7d">7 days</option>
+            <option value="custom">Custom…</option>
+            <option value="forever">Forever (no auto-expiry)</option>
           </select>{" "}
+          {ttlChoice === "custom" && (
+            <input
+              type="text"
+              style={{ width: 90, display: "inline-block" }}
+              placeholder="e.g. 45m / 12h / 30d"
+              value={customTtl}
+              onChange={(e) => setCustomTtl(e.target.value)}
+              aria-label="Custom TTL"
+            />
+          )}{" "}
+          Max file size:{" "}
+          <input
+            type="text"
+            style={{ width: 70, display: "inline-block" }}
+            placeholder={`global (10 MB)`}
+            value={maxMb}
+            onChange={(e) => setMaxMb(e.target.value)}
+            aria-label="Max file size in MB"
+          />{" "}
+          MB{" "}
           <button className="primary" onClick={create}>
             Create room
           </button>

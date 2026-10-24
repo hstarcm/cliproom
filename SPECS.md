@@ -150,6 +150,10 @@ There are exactly two operator roles and one anonymous member role:
   is stored on disk under `DATA_DIR/<room_id>/<file_id>`; never executed or
   served inline (`Content-Disposition: attachment`,
   `X-Content-Type-Options: nosniff`).
+- **FR-13a Per-room upload cap.** The creating operator may set an optional
+  `max_file_mb` for a room at creation (integer, 1 – global `MAX_FILE_MB`;
+  absent → global cap). Uploads to that room are capped by the room value;
+  violations → `413` naming the effective cap.
 - **FR-14 Authorship display.** Every item shows "added by \<name\>" in the
   author's color, with a relative timestamp.
 - **FR-15 Delete-own-only (items).** `DELETE /api/rooms/{id}/items/{item_id}`
@@ -172,9 +176,11 @@ There are exactly two operator roles and one anonymous member role:
 
 ### Expiry & cleanup
 
-- **FR-19 TTL.** Room TTL chosen at creation (1h/24h/7d). Activity
-  (add/upload/delete) extends `expires_at = now + ttl`. Pure viewing does NOT
-  extend.
+- **FR-19 TTL.** Room TTL chosen at creation: the presets `1h` / `24h` /
+  `7d`, any custom duration `<n>m|h|d` (minutes/hours/days; 1 minute – 365
+  days), or `forever` (no automatic expiry — ends only by manual deletion).
+  Activity (add/upload/delete) extends `expires_at = now + ttl` (forever
+  rooms have no expiry to extend). Pure viewing does NOT extend.
 - **FR-20 Sweeper.** A background job runs **hourly** (configurable
   `SWEEPER_INTERVAL_MIN`): deletes expired rooms, their disk directories, and
   any **orphaned files** on disk with no DB row (e.g. after a crash
@@ -286,7 +292,7 @@ cliproom/
 | POST | `/api/admin/logout` | session | destroy session |
 | GET | `/api/admin/rooms` | admin only | active rooms: `[{room_uuid, item_count, disk_usage, expires_at, created_by}]` |
 | DELETE | `/api/admin/rooms/{room_uuid}` | admin only | force-terminate any room + files |
-| POST | `/api/rooms` | admin or guest session | create room `{ttl: "1h"\|"24h"\|"7d"}` → `{room_id, share_url, expires_at}`; guest with an active room → `409` |
+| POST | `/api/rooms` | admin or guest session | create room `{ttl: "1h"\|"24h"\|"7d"\|"<n>m|h|d"\|"forever", max_file_mb?: int}` → `{room_id, share_url, expires_at}`; guest with an active room → `409` |
 | DELETE | `/api/rooms/{room_uuid}` | admin (any) or guest (own) | terminate room + files; members immediately get 404 |
 | GET | `/api/rooms/{room_id}` | member (link) | room metadata `{expires_at, item_count}` |
 | POST | `/api/rooms/{room_id}/join` | member token | `{name}` → `{member_id, name, color}` |
@@ -481,6 +487,11 @@ by side on one room — adds/deletes/joins appear live in both.
 - [ ] **AC19** On-call agent wakes on the alert, performs diagnosis +
       remediation, records it in `agent_actions`, and the failing condition
       returns to green (verified by metric).
+- [ ] **AC20** Operators can create rooms with custom TTLs (`45m`, `12h`,
+      `30d`…) or `forever` (never auto-expires; sweeper skips it; manual
+      deletion still works; activity extension applies only to timed rooms),
+      and with an optional per-room `max_file_mb` (≤ global cap) that
+      overrides the global upload cap for that room (413 on violation).
 
 ---
 
