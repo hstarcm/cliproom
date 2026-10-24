@@ -17,6 +17,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: dev
+    # opt-in: set repo variable DEPLOY_ENABLED=true once SSH_HOST/SSH_USER/
+    # SSH_KEY/DEPLOY_DIR/DEV_PUBLIC_HOST secrets exist (see README)
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
     steps:
       - name: Deploy over SSH (docker compose)
         uses: appleboy/ssh-action@v1
