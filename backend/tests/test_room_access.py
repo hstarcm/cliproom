@@ -1,7 +1,7 @@
 """FR-2: room access semantics — unknown room 404 (never 403), known room +
 wrong member token → 403."""
 
-from tests.conftest import join, operator_login
+from tests.conftest import operator_login
 
 
 def test_unknown_room_404_generic(client):

@@ -4,10 +4,10 @@ Self-hosted, ephemeral, **live shared scratch rooms** behind unguessable links.
 Share text snippets and files with strangers in real time — no accounts, no
 apps: one link is all it takes.
 
-> **Status: specification phase.** This repository currently contains the
-> authoritative specification ([SPECS.md](SPECS.md)) written before any
-> implementation code, per the AI Dev Tools Zoomcamp final-project workflow.
-> Implementation proceeds against the acceptance criteria in SPECS.md §10.
+> **Status: implemented against SPECS.md.** The specification
+> ([SPECS.md](SPECS.md)) was written before any code; every requirement traces
+> to tracker issues #1–#19 (one per acceptance criterion, §10) and commits
+> reference them.
 
 ## The problem
 
@@ -79,12 +79,70 @@ All facts verified October 2026 against each project's README/changelog.
 
 ## Setup & running
 
-Not yet implemented — see [SPECS.md](SPECS.md). Target behavior once built:
+One command starts the entire stack (frontend, api, SQLite + file volumes,
+Mailpit, OpenTelemetry collector, Prometheus, Alertmanager, Tempo, Loki,
+Grafana):
 
 ```bash
-docker compose up --build   # full stack, one command
-make test                   # backend + frontend + integration tests
+docker compose up --build
 ```
+
+Then:
+
+| What | URL |
+|---|---|
+| App (operator login) | http://localhost:8080/admin |
+| Room links | http://localhost:8080/r/&lt;room-id&gt; (created by an operator) |
+| Grafana (dashboards, traces, logs) | http://localhost:3300 (anonymous admin) |
+| Prometheus / Alertmanager | http://localhost:9090 / http://localhost:9093 |
+| Mailpit (alert escalation email) | http://localhost:8025 |
+
+**Local-dev bootstrap credentials** (active only because compose sets
+`CLIPROOM_DEV=1`; production must set real env vars — see
+`backend/app/config.py`):
+
+- admin: `admin` / `cliproom-dev-admin`
+- guest/demo: `guest` / `cliproom-dev-guest`
+
+Generate production password hashes with `bash scripts/hash_password.sh '<password>'`
+(argon2id) and set `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`,
+`AGENT_TOKEN`, `BASE_URL` (plus optional `GUEST_*` and the alertmanager bearer
+token in `ops/alertmanager/alertmanager.yml`).
+
+### Tests — one command
+
+```bash
+make test          # or: bash scripts/test.sh  (no make on Windows)
+```
+
+Runs the backend unit + integration suites (pytest) and the frontend suites
+(Vitest). CI (`.github/workflows/ci.yml`) additionally lints and builds the
+full compose stack on every PR.
+
+### Manual acceptance demo (AC9/AC10)
+
+1. Sign in at `/admin` (admin creds above) → create a room → copy the share URL.
+2. Open the URL in **two browser windows**; pick different names in each.
+3. In window A: add a text clip and upload a file. It appears in window B
+   within ~1 s; both presence chips show both members.
+4. In window B: try the Delete button on A's item (absent — own items only);
+   in A, delete it — it disappears from both.
+5. Reload window B — the join screen is skipped (identity in localStorage),
+   full state returns, colors are stable.
+
+### Deployment & rollback (AC15/AC16)
+
+- CI: lint + tests + compose build on every PR (`.github/workflows/ci.yml`).
+- CD: `deploy-dev.yml` auto-deploys on merge to main over SSH
+  (`docker compose up --build -d`) and smoke-checks `/api/health`;
+  `deploy-prod.yml` is a manual `workflow_dispatch` gated by the
+  `production` environment's required reviewers; `rollback.yml` redeploys the
+  previous commit/image tag and smoke-checks again.
+- Host secrets used by the workflows: `SSH_HOST`, `SSH_USER`, `SSH_KEY`,
+  `DEPLOY_DIR`, `DEV_PUBLIC_HOST`, `PROD_PUBLIC_HOST` (repo → Settings →
+  Secrets). The rollback drill (checkout previous commit → compose up →
+  health check → forward again) was executed and verified once against the
+  local compose stack; see the tracker issue #15 for the transcript.
 
 ## License
 

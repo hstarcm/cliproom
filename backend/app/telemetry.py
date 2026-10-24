@@ -89,7 +89,7 @@ def setup_telemetry(settings) -> None:
         logging.getLogger("cliproom.telemetry").warning("trace export unavailable: %s", type(exc).__name__)
 
     try:
-        from opentelemetry._logs import set_logging_instrumentation  # type: ignore
+        pass  # type: ignore
     except Exception:
         pass
     try:

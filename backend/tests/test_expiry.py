@@ -7,7 +7,7 @@ from datetime import timedelta
 from app.config import get_settings
 from app.db import init_engine, session_factory
 from app.ids import new_room_id
-from app.models import Item, Member, Room, utcnow
+from app.models import Room, utcnow
 from app.rooms import create_room, get_active_room, room_dir, touch_room
 from app.sweeper import run_sweep
 

@@ -1,0 +1,39 @@
+name: deploy-prod
+
+# Manual production deploy with reviewer approval (AC16): GitHub environment
+# "production" has required reviewers configured in repo settings.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type 'deploy' to confirm"
+        required: true
+        default: "no"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    if: ${{ github.event.inputs.confirm == 'deploy' }}
+    steps:
+      - name: Deploy over SSH (docker compose)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_DIR || '~/cliproom' }}
+            git pull --ff-only
+            docker compose up --build -d
+
+      - name: Smoke check /api/health
+        run: |
+          for i in $(seq 1 12); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "https://${{ secrets.PROD_PUBLIC_HOST }}/api/health" || true)
+            if [ "$code" = "200" ]; then echo "health OK"; exit 0; fi
+            sleep 10
+          done
+          echo "health check failed"; exit 1

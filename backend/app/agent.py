@@ -23,7 +23,6 @@ from .config import get_settings
 from .db import session_factory
 from .models import AgentAction, SweeperRun, utcnow
 from .sweeper import run_sweep
-from .security import agent_tokens_match
 
 logger = logging.getLogger("cliproom.agent")
 
@@ -36,8 +35,11 @@ class AlertPayload(BaseModel):
 
 
 def _verify_agent_token(token: str | None) -> None:
+    """FR-6: constant-time comparison against the raw AGENT_TOKEN secret."""
+    import hmac
+
     settings = get_settings()
-    if not token or not agent_tokens_match(token, settings.agent_token):
+    if not token or not hmac.compare_digest(token.encode(), settings.agent_token.encode()):
         raise HTTPException(status_code=403, detail="Forbidden")
 
 
@@ -142,44 +144,47 @@ def _handle_alert(settings, alert_name: str, alert: dict) -> dict:
     db.commit()
 
     steps: list[str] = []
+    try:
+        if alert_name == "UploadErrorSpike":
+            disk_ok, disk_info = _disk_ok(settings)
+            db_ok, db_info = _db_writable()
+            steps += [disk_info, db_info]
+            if disk_ok and db_ok:
+                steps.append("restart upload subsystem (clear limiter state)")
+                from .main import app_state  # local import avoids a cycle
 
-    if alert_name == "UploadErrorSpike":
-        disk_ok, disk_info = _disk_ok(settings)
-        db_ok, db_info = _db_writable()
-        steps += [disk_info, db_info]
-        if disk_ok and db_ok:
-            steps.append("restart upload subsystem (clear limiter state)")
-            from .main import app_state  # local import avoids a cycle
-
-            app_state().upload_limiter.reset()
-            up_ok, up_info = _synthetic_upload_ok(settings)
-            steps.append(up_info)
-            outcome = "resolved" if up_ok else "escalated"
+                app_state().state.upload_limiter.reset()
+                up_ok, up_info = _synthetic_upload_ok(settings)
+                steps.append(up_info)
+                outcome = "resolved" if up_ok else "escalated"
+            else:
+                up_ok, up_info = _synthetic_upload_ok(settings)
+                steps.append(up_info)
+                outcome = "resolved" if (disk_ok and db_ok and up_ok) else "escalated"
+        elif alert_name == "SweeperStalled":
+            steps.append("manual sweep triggered")
+            try:
+                summary = run_sweep(settings)
+                steps.append(
+                    f"sweep done: rooms={summary['rooms_deleted']} "
+                    f"files={summary['files_deleted']} orphans={summary['orphans_deleted']}"
+                )
+                last = (
+                    db.query(SweeperRun)
+                    .filter(SweeperRun.status == "ok")
+                    .order_by(SweeperRun.started_at.desc())
+                    .first()
+                )
+                outcome = "resolved" if last is not None else "escalated"
+                steps.append(f"last successful run: {last.started_at.isoformat() if last else 'none'}")
+            except Exception as exc:  # noqa: BLE001
+                steps.append(f"sweep failed: {exc}")
+                outcome = "escalated"
         else:
-            up_ok, up_info = _synthetic_upload_ok(settings)
-            steps.append(up_info)
-            outcome = "resolved" if (disk_ok and db_ok and up_ok) else "escalated"
-    elif alert_name == "SweeperStalled":
-        steps.append("manual sweep triggered")
-        try:
-            summary = run_sweep(settings)
-            steps.append(
-                f"sweep done: rooms={summary['rooms_deleted']} "
-                f"files={summary['files_deleted']} orphans={summary['orphans_deleted']}"
-            )
-            last = (
-                db.query(SweeperRun)
-                .filter(SweeperRun.status == "ok")
-                .order_by(SweeperRun.started_at.desc())
-                .first()
-            )
-            outcome = "resolved" if last is not None else "escalated"
-            steps.append(f"last successful run: {last.started_at.isoformat() if last else 'none'}")
-        except Exception as exc:  # noqa: BLE001
-            steps.append(f"sweep failed: {exc}")
+            steps.append("unknown alert — no automated remediation")
             outcome = "escalated"
-    else:
-        steps.append("unknown alert — no automated remediation")
+    except Exception as exc:  # noqa: BLE001 — the agent must never 500
+        steps.append(f"remediation error: {type(exc).__name__}: {exc}")
         outcome = "escalated"
 
     diagnosis = {

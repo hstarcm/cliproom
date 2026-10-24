@@ -1,0 +1,43 @@
+name: deploy-dev
+
+# CD: auto-deploy to the dev host on merge to main, with a /api/health smoke
+# check (AC16). Requires repo secrets: SSH_HOST, SSH_USER, SSH_KEY
+# (see README "Deployment").
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Deploy over SSH (docker compose)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_DIR || '~/cliproom' }}
+            git pull --ff-only
+            docker compose pull || true
+            docker compose up --build -d
+            # record previous image tag for rollback (AC15)
+            docker compose images --format json api | tee /tmp/cliproom-prev-api.json >/dev/null
+
+      - name: Smoke check /api/health
+        run: |
+          for i in $(seq 1 12); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "https://${{ secrets.DEV_PUBLIC_HOST }}/api/health" || true)
+            if [ "$code" = "200" ]; then echo "health OK after ${i} tries"; exit 0; fi
+            sleep 10
+          done
+          echo "health check failed"; exit 1

@@ -1,0 +1,43 @@
+name: rollback
+
+# AC15 rollback path: redeploy the previous image tag / commit.
+# Requires repo secrets like deploy-dev (SSH_HOST, SSH_USER, SSH_KEY).
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Commit SHA or tag to roll back to (default: previous commit on main)"
+        required: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Roll back to previous release
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_DIR || '~/cliproom' }}
+            REF="${{ github.event.inputs.ref }}"
+            if [ -z "$REF" ]; then
+              REF=$(git rev-parse HEAD~1)
+            fi
+            echo "rolling back to $REF"
+            git fetch --all
+            git checkout "$REF"
+            docker compose up --build -d
+
+      - name: Smoke check /api/health
+        run: |
+          for i in $(seq 1 12); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "https://${{ secrets.PROD_PUBLIC_HOST }}/api/health" || true)
+            if [ "$code" = "200" ]; then echo "health OK after rollback"; exit 0; fi
+            sleep 10
+          done
+          echo "health check failed after rollback"; exit 1
