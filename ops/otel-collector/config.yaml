@@ -11,7 +11,7 @@ processors:
 
 exporters:
   otlphttp/tempo:
-    endpoint: http://tempo:3200
+    endpoint: http://tempo:4318
   otlphttp/loki:
     endpoint: http://loki:3100/otlp
 
