@@ -76,14 +76,29 @@ class WSHub:
         return dropped
 
     async def broadcast(self, room_id: str, event: dict, exclude: str | None = None) -> None:
+        """Send to every connected member. Sends happen UNDER the lock:
+        concurrent handlers must never call send() on the same websocket
+        simultaneously — the ASGI layer rejects it and the socket dies.
+
+        Single-process, small messages: room-wide serialisation is the
+        simplest correct contract for FR-16's ~1 s budget.
+        """
+        import logging
+
+        failed: list[str] = []
         async with self._lock:
-            sockets = [ws for mid, (ws, _) in self._rooms.get(room_id, {}).items() if mid != exclude]
-        for ws in sockets:
-            try:
-                await ws.send_json(event)
-            except Exception:
-                # dead socket; presence sweep will clean it up
-                pass
+            entries = [
+                (mid, ws)
+                for mid, (ws, _) in self._rooms.get(room_id, {}).items()
+                if mid != exclude
+            ]
+            for mid, ws in entries:
+                try:
+                    await ws.send_json(event)
+                except Exception as exc:  # noqa: BLE001 — log type only (SR-4)
+                    failed.append(f"{type(exc).__name__}")
+        for kind in failed:
+            logging.getLogger("cliproom.ws").warning("broadcast send failed: %s", kind)
 
 
 hub = WSHub()
