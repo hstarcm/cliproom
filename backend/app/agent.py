@@ -123,14 +123,15 @@ def _escalate(settings, subject: str, body: str) -> bool:
 
 
 @router.post("/on-alert")
-def on_alert(payload: AlertPayload, x_agent_token: str | None = Header(default=None, alias="X-Agent-Token")):
+def on_alert(
+    payload: AlertPayload,
+    x_agent_token: str | None = Header(default=None, alias="X-Agent-Token"),
+    authorization: str | None = Header(default=None),
+):
     settings = get_settings()
-    _verify_agent_token(x_agent_token)
-
-    results = []
-    for alert in payload.alerts:
-        name = alert.get("labels", {}).get("alertname", "Unknown")
-        results.append(_handle_alert(settings, name, alert))
+    bearer = authorization[len("Bearer ") :].strip() if authorization and authorization.startswith("Bearer ") else None
+    _verify_agent_token(x_agent_token or bearer)
+    results = [_handle_alert(settings, a.get("labels", {}).get("alertname", "Unknown"), a) for a in payload.alerts]
     return {"handled": results}
 
 

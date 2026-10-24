@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time as _time
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -79,6 +80,10 @@ def run_sweep(settings: Settings, db: Session | None = None) -> dict:
         run.orphans_deleted = orphans_deleted
         run.status = status
         db.commit()
+        if status == "ok":
+            from .telemetry import sweeper_last_success
+
+            sweeper_last_success.set(_time.time())
         if own_session:
             db.close()
     return {

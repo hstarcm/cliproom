@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import re
+import time
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
@@ -206,6 +207,8 @@ async def add_text(
 ):
     room = get_room_or_404(room_id, db)
     member = require_member(room, x_member_token, db)
+    from ..telemetry import items_total
+
     item = Item(
         item_id=new_uuid(),
         room_id=room.room_id,
@@ -214,6 +217,7 @@ async def add_text(
         content=body.content,
     )
     db.add(item)
+    items_total.labels(kind="text").inc()
     touch_room(db, room)  # FR-19: activity extends TTL
     await hub.broadcast(room.room_id, {"type": "item_added", "item": item_public(item, member)})
     return item_public(item, member)
@@ -227,59 +231,84 @@ async def upload_file(
     x_member_token: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ):
+    from ..telemetry import tracer, upload_duration, uploads_total
+
     room = get_room_or_404(room_id, db)
     settings = get_settings()
     if not request.app.state.upload_limiter.hit("upload", client_ip(request)):
         return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"})
     member = require_member(room, x_member_token, db)
 
-    original_name = os.path.basename(file.filename or "")
-    ext = os.path.splitext(original_name)[1][1:].lower()
-    if not ext or ext not in settings.allowed_ext_set:
-        return JSONResponse(
-            status_code=415,
-            content={"detail": f"file type .{ext or '?'} not allowed"},
-        )
-
-    max_bytes = settings.max_file_mb * 1024 * 1024
-    file_id = new_uuid()
-    dest_dir = room_dir(settings, room.room_id)
-    os.makedirs(dest_dir, exist_ok=True)
-    dest_path = os.path.join(dest_dir, file_id)
-    size = 0
-    too_large = False
+    # §7 key journey: upload → validate → store → broadcast (traced, no
+    # sensitive attributes — SR-4: filenames never enter telemetry)
+    span = tracer()
+    started = time.perf_counter()
+    result = "ok"
     try:
-        with open(dest_path, "wb") as out:
-            while chunk := await file.read(UPLOAD_CHUNK):
-                size += len(chunk)
-                if size > max_bytes:
-                    too_large = True
-                    break
-                out.write(chunk)
-    finally:
-        await file.close()
-    if too_large:
-        os.remove(dest_path)
-        return JSONResponse(
-            status_code=413,
-            content={"detail": f"file exceeds the {settings.max_file_mb} MB limit"},
-        )
+        with span("http.upload"):
+            with span("validate_file"):
+                original_name = os.path.basename(file.filename or "")
+                ext = os.path.splitext(original_name)[1][1:].lower()
+                if not ext or ext not in settings.allowed_ext_set:
+                    result = "disallowed"
+                    return JSONResponse(
+                        status_code=415,
+                        content={"detail": f"file type .{ext or '?'} not allowed"},
+                    )
 
-    item = Item(
-        item_id=new_uuid(),
-        room_id=room.room_id,
-        author_member_id=member.member_id,
-        kind="file",
-        file_name=original_name,
-        file_id=file_id,
-        file_path=dest_path,
-        file_size=size,
-        mime=file.content_type or "application/octet-stream",
-    )
-    db.add(item)
-    touch_room(db, room)
-    await hub.broadcast(room.room_id, {"type": "item_added", "item": item_public(item, member)})
-    return item_public(item, member)
+            max_bytes = settings.max_file_mb * 1024 * 1024
+            file_id = new_uuid()
+            with span("persist_file"):
+                dest_dir = room_dir(settings, room.room_id)
+                os.makedirs(dest_dir, exist_ok=True)
+                dest_path = os.path.join(dest_dir, file_id)
+                size = 0
+                too_large = False
+                try:
+                    with open(dest_path, "wb") as out:
+                        while chunk := await file.read(UPLOAD_CHUNK):
+                            size += len(chunk)
+                            if size > max_bytes:
+                                too_large = True
+                                break
+                            out.write(chunk)
+                finally:
+                    await file.close()
+            if too_large:
+                result = "too_large"
+                os.remove(dest_path)
+                return JSONResponse(
+                    status_code=413,
+                    content={"detail": f"file exceeds the {settings.max_file_mb} MB limit"},
+                )
+
+            item = Item(
+                item_id=new_uuid(),
+                room_id=room.room_id,
+                author_member_id=member.member_id,
+                kind="file",
+                file_name=original_name,
+                file_id=file_id,
+                file_path=dest_path,
+                file_size=size,
+                mime=file.content_type or "application/octet-stream",
+            )
+            db.add(item)
+            from ..telemetry import items_total
+
+            items_total.labels(kind="file").inc()
+            touch_room(db, room)
+            with span("ws.broadcast"):
+                await hub.broadcast(
+                    room.room_id, {"type": "item_added", "item": item_public(item, member)}
+                )
+            return item_public(item, member)
+    except Exception:
+        result = "error"
+        raise
+    finally:
+        uploads_total.labels(result=result).inc()
+        upload_duration.observe(time.perf_counter() - started)
 
 
 @router.delete("/rooms/{room_id}/items/{item_id}")
@@ -373,6 +402,9 @@ async def room_ws(websocket: WebSocket, room_id: str):
 
     counts[ip] = counts.get(ip, 0) + 1
     await websocket.accept()
+    from ..telemetry import ws_clients
+
+    ws_clients.inc()
     connected = ConnectedMember(
         member_id=member.member_id, name=member.name, color=member.color, room_id=room.room_id
     )
@@ -413,6 +445,7 @@ async def room_ws(websocket: WebSocket, room_id: str):
         pass
     finally:
         counts[ip] = max(0, counts.get(ip, 1) - 1)
+        ws_clients.dec()
         await hub.disconnect(room.room_id, member.member_id)
         await hub.broadcast(room.room_id, {"type": "member_left", "member_id": member.member_id})
         await hub.broadcast(room.room_id, {"type": "presence", "members": await _presence(room.room_id)})

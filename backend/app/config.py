@@ -96,7 +96,9 @@ class Settings(BaseSettings):
         if not self.session_secret:
             self.session_secret = secrets.token_hex(32)
         if not self.agent_token:
-            self.agent_token = secrets.token_hex(32)
+            # fixed dev token so the local Alertmanager config can reach the
+            # agent endpoint (prod must set a real AGENT_TOKEN everywhere)
+            self.agent_token = "cliproom-dev-agent-token"
 
     def validate_required(self) -> None:
         missing = [

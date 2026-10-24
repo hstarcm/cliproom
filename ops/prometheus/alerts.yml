@@ -1,0 +1,25 @@
+# §7 alerts: real user impact, not CPU graphs.
+groups:
+  - name: cliproom
+    rules:
+      # people cannot share files — user impact
+      - alert: UploadErrorSpike
+        expr: >
+          rate(cliproom_uploads_total{result="error"}[5m]) > 0.2 * rate(cliproom_uploads_total[5m])
+          and rate(cliproom_uploads_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "More than 20% of uploads are failing"
+          description: "Upload error ratio above 20% over the last 5 minutes — members cannot share files."
+
+      # expired rooms/files accumulate — privacy + disk impact
+      - alert: SweeperStalled
+        expr: time() - cliproom_sweeper_last_success_timestamp > 7200
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sweeper has not succeeded in over 2 hours"
+          description: "Expired rooms and files are not being cleaned up (privacy + disk risk)."

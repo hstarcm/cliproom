@@ -1,0 +1,19 @@
+# Alertmanager routes both alerts to the on-call agent webhook (§7).
+# The bearer token must match the api's AGENT_TOKEN (dev default:
+# "cliproom-dev-agent-token" — set a real token in production).
+route:
+  receiver: cliproom-agent
+  group_by: ["alertname"]
+  group_wait: 5s
+  group_interval: 30s
+  repeat_interval: 1h
+
+receivers:
+  - name: cliproom-agent
+    webhook_configs:
+      - url: http://api:8000/api/agent/on-alert
+        send_resolved: true
+        http_config:
+          authorization:
+            type: Bearer
+            credentials: cliproom-dev-agent-token

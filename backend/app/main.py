@@ -58,6 +58,10 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        from .telemetry import setup_telemetry
+
+        setup_telemetry(settings)
+
         engine, _ = init_engine(settings.db_path)
         Base.metadata.create_all(engine)
 
@@ -104,6 +108,12 @@ def create_app() -> FastAPI:
             return {"status": "ok", "db": "ok"}
         except Exception:
             return JSONResponse(status_code=503, content={"status": "degraded", "db": "error"})
+
+    @app.get("/metrics")
+    def metrics():
+        from .telemetry import metrics_response
+
+        return metrics_response()
 
     app.include_router(admin_router)
     app.include_router(rooms_router)
