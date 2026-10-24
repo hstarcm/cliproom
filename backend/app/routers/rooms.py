@@ -7,6 +7,7 @@ disallowed type → 415; validation → 422; rate limit → 429.
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 import time
@@ -298,6 +299,7 @@ async def upload_file(
 
             items_total.labels(kind="file").inc()
             touch_room(db, room)
+            logging.getLogger("cliproom.upload").info("upload journey: file accepted")
             with span("ws.broadcast"):
                 await hub.broadcast(
                     room.room_id, {"type": "item_added", "item": item_public(item, member)}

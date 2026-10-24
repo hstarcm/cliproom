@@ -82,7 +82,14 @@ def create_app() -> FastAPI:
         idle_task.cancel()
         scheduler.shutdown(wait=False)
 
-    app = FastAPI(title="ClipRoom API", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(
+        title="ClipRoom API",
+        version="0.1.0",
+        lifespan=lifespan,
+        # FastAPI >=0.162 traces every request by default; its spans carry
+        # url.path with real room IDs (SR-4) — telemetry stays manual-only.
+        telemetry={"tracing": False},
+    )
 
     app.add_middleware(
         CORSMiddleware,

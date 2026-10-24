@@ -107,6 +107,9 @@ def setup_telemetry(settings) -> None:
         handler = LoggingHandler(level=logging.INFO, logger_provider=logger_provider)
         root.addHandler(handler)
         _OTLP_HANDLER = handler
+        logging.getLogger("cliproom.telemetry").info(
+            "otel export initialised: traces+logs -> %s", settings.otel_exporter_otlp_endpoint
+        )
     except Exception as exc:  # noqa: BLE001
         logging.getLogger("cliproom.telemetry").warning("log export unavailable: %s", type(exc).__name__)
 
