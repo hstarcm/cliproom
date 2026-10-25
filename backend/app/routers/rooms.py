@@ -136,9 +136,19 @@ def create_room_route(
     if not request.app.state.create_limiter.hit("create_room", client_ip(request)):
         return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"})
     if session["role"] == "guest" and guest_active_room(db) is not None:
+        existing = guest_active_room(db)
         return JSONResponse(
             status_code=409,
-            content={"detail": "Guest already has an active room — delete it first"},
+            content={
+                "detail": "Guest already has an active room — delete it first",
+                # the demo panel may have lost its local copy (cleared storage,
+                # new browser) — hand it back so the UI can recover
+                "room": {
+                    "room_id": existing.room_id,
+                    "share_url": f"{settings.base_url}/r/{existing.room_id}",
+                    "expires_at": iso_utc(existing.expires_at),
+                },
+            },
         )
     room = create_room_row(
         db, created_by=session["role"], ttl_label=body.ttl, max_file_mb=body.max_file_mb

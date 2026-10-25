@@ -30,8 +30,9 @@ async function json(resp: Response): Promise<any> {
         : Array.isArray(body?.detail)
           ? body.detail.map((d: any) => d.msg).join("; ")
           : `Request failed (${resp.status})`;
-    const err = new Error(message) as Error & { status: number };
+    const err = new Error(message) as Error & { status: number; payload?: any };
     err.status = resp.status;
+    err.payload = body; // e.g. 409 room recovery for the demo panel
     throw err;
   }
   return body;

@@ -25,6 +25,9 @@ def test_guest_one_active_room_then_409(client):
     r2 = _create(client)
     assert r2.status_code == 409
     assert "delete" in r2.json()["detail"].lower()
+    # the 409 carries the existing room so a demo panel with lost storage
+    # can recover its share link / delete button
+    assert r2.json()["room"]["room_id"] == room["room_id"]
 
 
 def test_guest_deletes_own_room_members_get_404_then_recreate(client):

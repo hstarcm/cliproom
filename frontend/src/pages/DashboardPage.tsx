@@ -58,6 +58,12 @@ export default function DashboardPage() {
       void loadRooms();
     } catch (e: any) {
       setError(e.message);
+      // 409 means the demo already has a room — the response carries it, so
+      // the panel can recover even if localStorage was cleared or lost
+      if (e.status === 409 && e.payload?.room) {
+        setGuestRoom(e.payload.room);
+        localStorage.setItem("cliproom:guest-room", JSON.stringify(e.payload.room));
+      }
     }
   };
 
@@ -154,6 +160,12 @@ export default function DashboardPage() {
         {guestRoom && (roleHint === "guest" || !rooms) && (
           <p>
             Your active room: <div className="share-url">{guestRoom.share_url}</div>
+            <button
+              onClick={() => setQrUrl(guestRoom.share_url)}
+              title="Show QR code of the share link"
+            >
+              QR
+            </button>{" "}
             <button className="danger" onClick={deleteGuestRoom}>
               Delete this room
             </button>
