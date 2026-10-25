@@ -110,16 +110,19 @@ There are exactly two operator roles and one anonymous member role:
 - **FR-5 Admin dashboard.** Admin-only page: list of active rooms (internal
   `room_uuid` surrogate, item count, disk usage, `expires_at`) with a
   **force-terminate** action (`DELETE /api/admin/rooms/{room_uuid}`) that
-  deletes the room, its files, and immediately 404s it for members. Guest
+  deletes the room, its files, and immediately 404s it for members. Each row
+  links to the room and offers a **QR code popup** of its share URL. Guest
   sessions get **403** on all `/api/admin/*` routes.
 - **FR-6 Agent access.** The on-call responder agent authenticates to internal
   admin endpoints with a separate `AGENT_TOKEN` env secret — it never uses the
   admin session.
-- **FR-7 Guest constraints.** A guest session may have **at most one active
-  room**: creating a second → `409 Conflict` with a clear message ("delete your
-  current room first"). `DELETE /api/rooms/{room_uuid}` deletes the guest's own
-  room (files included; members immediately get 404); afterwards the guest can
-  create a new room. A guest cannot list, see, or terminate any other room.
+- **FR-7 Guest constraints.** A guest (UI: "Demo") session may have **at most
+  one active room**: creating a second → `409 Conflict` with a clear message
+  ("delete your current room first") **and the existing room in the body**
+  (demo-panel recovery after lost browser storage). `DELETE
+  /api/rooms/{room_uuid or room_id}` deletes the guest's own room (files
+  included; members immediately get 404); afterwards the guest can create a
+  new room. A guest cannot list, see, or terminate any other room.
 
 ### Join & member identity
 
@@ -258,6 +261,7 @@ There are exactly two operator roles and one anonymous member role:
 | `AGENT_TOKEN` | on-call agent → internal endpoints | required |
 | `BASE_URL` | used to build `share_url` (e.g. `https://abc.dedyn.io`) | required |
 | `MAX_FILE_MB` | global upload cap (per-room override: FR-13a) | `10` |
+| `NGINX_MAX_BODY_SIZE` | nginx request-body bound (auto-derived: `MAX_FILE_MB` + 6 MB margin; set only to pin explicitly) | derived |
 | `ALLOWED_EXTENSIONS` | upload allowlist | see FR-13 |
 | `DATA_DIR`, `DB_PATH` | storage locations | `/data/files`, `/data/cliproom.db` |
 | `SWEEPER_INTERVAL_MIN` | sweeper period | `60` |

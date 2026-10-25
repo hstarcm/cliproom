@@ -37,6 +37,8 @@ with their files.
   "in this room now" presence list.
 - **Delete-own-only:** a member can delete only items they added — enforced
   server-side via hashed member tokens.
+- Every room row in the admin dashboard links to the room and shows a **QR
+  code popup** for its share link (the demo panel has the same QR button).
 - The operator administers the instance through an **admin account**
   (unlimited rooms, dashboard, force-terminate) and an optional **guest/demo
   account** (exactly one active room, deletable by itself only) — both
@@ -106,7 +108,7 @@ Then:
 `backend/app/config.py`):
 
 - admin: `admin` / `cliproom-dev-admin`
-- guest/demo: `guest` / `cliproom-dev-guest`
+- demo account: username `guest` / `cliproom-dev-guest` (UI shows "Demo")
 
 Generate production password hashes with `bash scripts/hash_password.sh '<password>'`
 (argon2id) and set `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`,
