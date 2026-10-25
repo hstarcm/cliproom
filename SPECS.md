@@ -145,8 +145,14 @@ There are exactly two operator roles and one anonymous member role:
   (enforced server-side). Clips are ordered newest-first on the canvas.
 - **FR-13 File uploads.** Any member can upload files with **max size 10 MB
   (server-enforced, configurable `MAX_FILE_MB`)** and an **allowlist** of
-  extensions/MIME types (default: png, jpg, jpeg, gif, webp, pdf, txt, md, csv,
-  zip; deny-by-default). Original filenames are preserved for download; content
+  extensions (deny-by-default; configurable `ALLOWED_EXTENSIONS`). Default:
+  images (png/jpg/jpeg/gif/webp), pdf, text (txt/md/csv), archives
+  (zip/7z/rar), code/config (py/ipynb/yaml/yml/json/toml/ini/xml/sql/
+  js/mjs/cjs/ts/tsx/jsx/css/scss/less/vue/svelte/java/c/h/hpp/cc/cpp/cs/
+  go/rs/rb/kt/swift/sh/bash), MS Office (doc/docx/xls/xlsx/ppt/pptx).
+  Deliberately excluded: executables & server code (exe/php/jsp/…),
+  browser-renderable types (html/svg — SR-5), and macro-enabled Office
+  (docm/xlsm/pptm). Original filenames are preserved for download; content
   is stored on disk under `DATA_DIR/<room_id>/<file_id>`; never executed or
   served inline (`Content-Disposition: attachment`,
   `X-Content-Type-Options: nosniff`).

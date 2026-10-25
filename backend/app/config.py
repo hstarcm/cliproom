@@ -13,7 +13,18 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-DEFAULT_ALLOWED_EXTENSIONS = "png,jpg,jpeg,gif,webp,pdf,txt,md,csv,zip"
+# Deny-by-default allowlist (FR-13). Line between allowed/rejected:
+# anything that could execute on the server (php/jsp/asp/exe/…) or
+# auto-execute in a browser (html/svg/js-as-page) stays OUT; scripts and
+# docs that only run when the recipient deliberately opens them are IN.
+DEFAULT_ALLOWED_EXTENSIONS = (
+    "png,jpg,jpeg,gif,webp,pdf,txt,md,csv,"  # images & text
+    "zip,7z,rar,"  # archives
+    "py,ipynb,yaml,yml,json,toml,ini,xml,sql,"  # data & config
+    "js,mjs,cjs,ts,tsx,jsx,css,scss,less,vue,svelte,"  # frontend source
+    "java,c,h,hpp,cc,cpp,cs,go,rs,rb,kt,swift,sh,bash,"  # source & scripts
+    "doc,docx,xls,xlsx,ppt,pptx"  # MS Office (macro-free handling: docm/xlsm/pptm excluded)
+)
 
 # argon2id hashes of the documented dev-only bootstrap credentials
 # ("cliproom-dev-admin" / "cliproom-dev-guest"). Used ONLY when

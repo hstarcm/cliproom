@@ -6,6 +6,13 @@ export interface ComposerProps {
   maxFileMb?: number;
 }
 
+export const ACCEPTED_EXTENSIONS =
+  ".png,.jpg,.jpeg,.gif,.webp,.pdf,.txt,.md,.csv,.zip,.7z,.rar," +
+  ".py,.ipynb,.yaml,.yml,.json,.toml,.ini,.xml,.sql," +
+  ".js,.mjs,.cjs,.ts,.tsx,.jsx,.css,.scss,.less,.vue,.svelte," +
+  ".java,.c,.h,.hpp,.cc,.cpp,.cs,.go,.rs,.rb,.kt,.swift,.sh,.bash," +
+  ".doc,.docx,.xls,.xlsx,.ppt,.pptx";
+
 export default function Composer({ onAddText, onUpload, maxFileMb = 10 }: ComposerProps) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +77,7 @@ export default function Composer({ onAddText, onUpload, maxFileMb = 10 }: Compos
           <input
             ref={fileInput}
             type="file"
-            accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.txt,.md,.csv,.zip"
+            accept={ACCEPTED_EXTENSIONS}
             aria-label="Choose file to upload"
             onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
           />
@@ -80,7 +87,9 @@ export default function Composer({ onAddText, onUpload, maxFileMb = 10 }: Compos
           Upload
         </button>
         <span className="muted">
-          up to {maxFileMb} MB · png, jpg, gif, webp, pdf, txt, md, csv, zip
+          up to {maxFileMb} MB · images, docs &amp; Office, code &amp; config files,
+          archives (zip/7z/rar) · executables, HTML/SVG and macro-enabled
+          Office files are rejected
         </span>
         {fileName && <span className="muted">selected: {fileName}</span>}
       </div>

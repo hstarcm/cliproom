@@ -91,6 +91,33 @@ def test_canonical_mime_map_covers_allowlist(client):
     from app.routers.rooms import CANONICAL_MIME
     from app.config import get_settings
 
-    assert set(CANONICAL_MIME) == get_settings().allowed_ext_set
+    allowed = get_settings().allowed_ext_set
+    # mapped mimes must all be allowlisted; everything unmapped serves
+    # octet-stream (download-only) via the fallback
+    assert set(CANONICAL_MIME) <= allowed
     assert CANONICAL_MIME["jpg"] == "image/jpeg"
-    assert CANONICAL_MIME["zip"] == "application/zip"
+    assert CANONICAL_MIME["7z"] == "application/x-7z-compressed"
+    assert CANONICAL_MIME["docx"].startswith("application/vnd.openxmlformats")
+    assert CANONICAL_MIME["py"] == "text/x-python"
+
+
+def test_expanded_allowlist_accepts_and_still_rejects(client):
+    room_id, token = _setup(client)
+    accepted = ("script.py", "notebook.ipynb", "config.yaml", "app.tsx", "main.go",
+                "data.xlsx", "report.docx", "deck.pptx", "slide.ppt", "old.xls", "arch.7z", "pack.rar",
+                "styles.css", "Cargo.toml", "query.sql", "run.sh")
+    for name in accepted:
+        assert _upload(client, room_id, token, name).status_code == 200, name
+
+    rejected = (
+        "macro.docm",     # macro-enabled office — classic malware vector
+        "macro.xlsm",
+        "page.html",      # browser-renderable XSS vector (SR-5)
+        "vector.svg",
+        "webshell.php",   # server-executable
+        "server.jsp",
+        "tool.exe",       # executable
+        "run.bat",
+    )
+    for name in rejected:
+        assert _upload(client, room_id, token, name).status_code == 415, name

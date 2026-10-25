@@ -66,6 +66,26 @@ CANONICAL_MIME = {
     "md": "text/markdown",
     "csv": "text/csv",
     "zip": "application/zip",
+    "7z": "application/x-7z-compressed",
+    "rar": "application/vnd.rar",
+    "py": "text/x-python",
+    "ipynb": "application/x-ipynb+json",
+    "yaml": "application/yaml",
+    "yml": "application/yaml",
+    "json": "application/json",
+    "toml": "application/toml",
+    "css": "text/css",
+    "js": "text/javascript",
+    "mjs": "text/javascript",
+    "cjs": "text/javascript",
+    "doc": "application/msword",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "xls": "application/vnd.ms-excel",
+    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "ppt": "application/vnd.ms-powerpoint",
+    "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    # everything unmapped (ts/tsx/java/go/sql/…) serves application/octet-stream,
+    # which forces download-only handling in every browser
 }
 
 
