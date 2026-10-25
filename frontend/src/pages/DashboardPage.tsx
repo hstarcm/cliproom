@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
+import { formatExpiry } from "../lib/format";
 
 type AdminRoom = Awaited<ReturnType<typeof api.adminRooms>>[number];
 
@@ -19,8 +20,12 @@ export default function DashboardPage() {
   const [guestRoom, setGuestRoom] = useState<{ room_id: string; share_url: string } | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("cliproom:guest-room");
-    if (saved) setGuestRoom(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem("cliproom:guest-room");
+      if (saved) setGuestRoom(JSON.parse(saved));
+    } catch {
+      localStorage.removeItem("cliproom:guest-room");
+    }
   }, []);
 
   const loadRooms = useCallback(async () => {
@@ -179,7 +184,7 @@ export default function DashboardPage() {
                     <td style={{ fontFamily: "monospace" }}>{r.room_uuid.slice(0, 12)}…</td>
                     <td>{r.item_count}</td>
                     <td>{(r.disk_usage / 1024).toFixed(1)} KB</td>
-                    <td>{new Date(r.expires_at.endsWith("Z") ? r.expires_at : `${r.expires_at}Z`).toLocaleString()}</td>
+                    <td>{formatExpiry(r.expires_at)}</td>
                     <td>{r.created_by}</td>
                     <td>
                       <button className="danger" onClick={() => terminate(r.room_uuid)}>

@@ -18,3 +18,10 @@ export function formatSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+/** Admin-listing expiry cell: null = forever room (FR-19); iso strings may
+ * arrive without the Z suffix depending on storage round-trips. */
+export function formatExpiry(iso: string | null): string {
+  if (!iso) return "forever";
+  return new Date(iso.endsWith("Z") || iso.includes("+") ? iso : `${iso}Z`).toLocaleString();
+}
