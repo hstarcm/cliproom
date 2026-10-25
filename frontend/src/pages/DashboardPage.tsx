@@ -186,7 +186,16 @@ export default function DashboardPage() {
               <tbody>
                 {rooms.map((r) => (
                   <tr key={r.room_uuid}>
-                    <td style={{ fontFamily: "monospace" }}>{r.room_uuid.slice(0, 12)}…</td>
+                    <td style={{ fontFamily: "monospace", wordBreak: "break-all" }}>
+                      <a
+                        href={`/r/${r.room_id}`}
+                        target="_blank"
+                        rel="noopener"
+                        title="Open this room"
+                      >
+                        {r.room_uuid}
+                      </a>
+                    </td>
                     <td>{r.item_count}</td>
                     <td>{(r.disk_usage / 1024).toFixed(1)} KB</td>
                     <td>{formatExpiry(r.expires_at)}</td>

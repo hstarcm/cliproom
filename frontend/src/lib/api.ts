@@ -63,6 +63,7 @@ export const api = {
     const r = await fetch("/api/admin/rooms", { credentials: "include" });
     return (await json(r)) as Array<{
       room_uuid: string;
+      room_id: string;
       item_count: number;
       disk_usage: number;
       expires_at: string;

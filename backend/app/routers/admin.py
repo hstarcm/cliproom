@@ -91,6 +91,7 @@ def list_rooms(db: Session = Depends(get_db)):
         out.append(
             {
                 "room_uuid": r.room_uuid,
+                "room_id": r.room_id,  # capability id — admin may open the room
                 "item_count": item_count,
                 "disk_usage": room_disk_usage(db, r.room_id),
                 "expires_at": iso_utc(r.expires_at),

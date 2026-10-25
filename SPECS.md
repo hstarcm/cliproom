@@ -301,7 +301,7 @@ cliproom/
 |---|---|---|---|
 | POST | `/api/admin/login` | none | `{username, password}` → session cookie + `{role: "admin"\|"guest"}`; rate-limited |
 | POST | `/api/admin/logout` | session | destroy session |
-| GET | `/api/admin/rooms` | admin only | active rooms: `[{room_uuid, item_count, disk_usage, expires_at, created_by}]` |
+| GET | `/api/admin/rooms` | admin only | active rooms: `[{room_uuid, room_id, item_count, disk_usage, expires_at, created_by}]` (room_id exposed to the authenticated admin for dashboard room links) |
 | DELETE | `/api/admin/rooms/{room_uuid}` | admin only | force-terminate any room + files |
 | POST | `/api/rooms` | admin or guest session | create room `{ttl: "1h"\|"24h"\|"7d"\|"<n>m|h|d"\|"forever", max_file_mb?: int}` → `{room_id, share_url, expires_at}`; guest with an active room → `409` |
 | DELETE | `/api/rooms/{room_uuid}` | admin (any) or guest (own) | terminate room + files; members immediately get 404 |

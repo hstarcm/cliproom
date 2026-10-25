@@ -111,6 +111,9 @@ def test_admin_dashboard_and_force_terminate(client):
     assert len(rows) == 1
     assert rows[0]["created_by"] == "admin"
     assert "room_uuid" in rows[0] and "expires_at" in rows[0]
+    # room_id (capability id) is exposed to the authenticated admin so the
+    # dashboard can link straight into the room
+    assert rows[0]["room_id"] == room_id
 
     r = client.delete(
         f"/api/admin/rooms/{rows[0]['room_uuid']}", headers={"X-Requested-With": "fetch"}
