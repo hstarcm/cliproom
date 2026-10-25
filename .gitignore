@@ -38,3 +38,8 @@ coverage/
 
 # ZCode session artifacts
 .zcode/
+
+# editor backups
+*~
+*.bak
+*.saved.bak
