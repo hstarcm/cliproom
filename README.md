@@ -161,4 +161,4 @@ full compose stack on every PR.
 
 ## License
 
-TBD by the author.
+Released under the [MIT License](LICENSE).
