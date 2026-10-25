@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     # --- operator accounts (FR-3) -------------------------------------------
     admin_username: str = ""
     admin_password_hash: str = ""
+    # demo account (UI name "Demo"); DEMO_* env vars are preferred, the
+    # legacy GUEST_* names are still accepted as aliases
+    demo_username: str = ""
+    demo_password_hash: str = ""
     guest_username: str = ""
     guest_password_hash: str = ""
     guest_enabled: bool = False
@@ -92,24 +96,33 @@ class Settings(BaseSettings):
         return {e.strip().lower() for e in self.allowed_extensions.split(",") if e.strip()}
 
     def apply_dev_defaults(self) -> None:
-        """Fill in bootstrap credentials for local dev only (never prod)."""
-        if not self.cliproom_dev:
-            return
-        if not self.admin_username:
-            self.admin_username = "admin"
-        if not self.admin_password_hash:
-            self.admin_password_hash = DEV_ADMIN_HASH
-        if not self.guest_username:
-            self.guest_username = "guest"
-        if not self.guest_password_hash:
-            self.guest_password_hash = DEV_GUEST_HASH
+        """Resolve DEMO_*/GUEST_* aliases, apply dev bootstrap, then enable
+        the demo role whenever its credentials exist (dev or prod)."""
+        # DEMO_* is the preferred spelling; it wins when both are given
+        if self.demo_username:
+            self.guest_username = self.demo_username
+        if self.demo_password_hash:
+            self.guest_password_hash = self.demo_password_hash
+
+        if self.cliproom_dev:
+            if not self.admin_username:
+                self.admin_username = "admin"
+            if not self.admin_password_hash:
+                self.admin_password_hash = DEV_ADMIN_HASH
+            if not self.guest_username:
+                self.guest_username = "guest"
+            if not self.guest_password_hash:
+                self.guest_password_hash = DEV_GUEST_HASH
+            if not self.session_secret:
+                self.session_secret = secrets.token_hex(32)
+            if not self.agent_token:
+                # fixed dev token so the local Alertmanager config can reach
+                # the agent endpoint (prod must set a real AGENT_TOKEN)
+                self.agent_token = "cliproom-dev-agent-token"
+
+        # FR-3: the demo role is enabled iff its credentials are present
+        if self.guest_username and self.guest_password_hash:
             self.guest_enabled = True
-        if not self.session_secret:
-            self.session_secret = secrets.token_hex(32)
-        if not self.agent_token:
-            # fixed dev token so the local Alertmanager config can reach the
-            # agent endpoint (prod must set a real AGENT_TOKEN everywhere)
-            self.agent_token = "cliproom-dev-agent-token"
 
     def validate_required(self) -> None:
         missing = [

@@ -253,7 +253,7 @@ There are exactly two operator roles and one anonymous member role:
 | Variable | Purpose | Default |
 |---|---|---|
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH` | admin operator account | required |
-| `GUEST_USERNAME`, `GUEST_PASSWORD_HASH` | guest/demo operator account | optional (role disabled if unset) |
+| `DEMO_USERNAME`, `DEMO_PASSWORD_HASH` | demo operator account (`GUEST_*` spellings still accepted; enabled iff set) | optional (role disabled if unset) |
 | `SESSION_SECRET` | session cookie signing | required |
 | `AGENT_TOKEN` | on-call agent → internal endpoints | required |
 | `BASE_URL` | used to build `share_url` (e.g. `https://abc.dedyn.io`) | required |

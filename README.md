@@ -110,7 +110,8 @@ Then:
 
 Generate production password hashes with `bash scripts/hash_password.sh '<password>'`
 (argon2id) and set `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`,
-`AGENT_TOKEN`, `BASE_URL` (plus optional `GUEST_*` and the alertmanager bearer
+`AGENT_TOKEN`, `BASE_URL` (plus optional `DEMO_USERNAME`/`DEMO_PASSWORD_HASH` for the demo
+account — legacy `GUEST_*` spellings still work — and the alertmanager bearer
 token in `ops/alertmanager/alertmanager.yml`).
 
 **Upload caps:** the global cap is `MAX_FILE_MB` (default 10 MB, set when

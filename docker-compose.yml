@@ -14,7 +14,7 @@ services:
       LOKI_URL: http://loki:3100
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
-      # production: set ADMIN_USERNAME, ADMIN_PASSWORD_HASH, GUEST_*,
+      # production: set ADMIN_USERNAME, ADMIN_PASSWORD_HASH, DEMO_* (or GUEST_*),
       # SESSION_SECRET, AGENT_TOKEN, BASE_URL (see backend/app/config.py)
     volumes:
       - cliproom-db:/data/db
