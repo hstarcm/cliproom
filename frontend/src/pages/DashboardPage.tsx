@@ -89,7 +89,12 @@ export default function DashboardPage() {
 
   return (
     <div className="shell">
-      <h1>ClipRoom — operator</h1>
+      <h1>
+        ClipRoom
+        <span className={`role-badge ${roleHint === "guest" ? "guest" : "admin"}`}>
+          {roleHint === "guest" ? "Guest" : "Admin"}
+        </span>
+      </h1>
       <p className="muted">
         {roleHint === "guest"
           ? "Guest/demo account: at most one active room; you can delete only your own room."
