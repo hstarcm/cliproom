@@ -204,7 +204,10 @@ There are exactly two operator roles and one anonymous member role:
   user-chosen = potential personal data). Telemetry uses an internal
   `room_uuid` surrogate where correlation is needed.
 - **SR-5** All uploads served as attachments (FR-13); no HTML/SVG inline
-  rendering; SVG excluded from the allowlist by default.
+  rendering; SVG excluded from the allowlist by default. Served Content-Type
+  is the canonical MIME of the allowlisted extension — never the
+  client-declared type — and control characters are stripped from stored
+  filenames before they can reach storage or headers.
 - **SR-6** CORS locked to the frontend origin; security headers:
   `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` (a Referer
   leak could expose room URLs), `X-Frame-Options: DENY`.

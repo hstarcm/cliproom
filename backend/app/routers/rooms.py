@@ -52,6 +52,22 @@ router = APIRouter(prefix="/api")
 UPLOAD_CHUNK = 1024 * 1024
 MAX_TEXT_CHARS = 10_000
 
+# canonical serving MIME per allowlisted extension (deny-by-default: anything
+# else serves as application/octet-stream) — the client-declared content type
+# is never used to serve a download
+CANONICAL_MIME = {
+    "png": "image/png",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "gif": "image/gif",
+    "webp": "image/webp",
+    "pdf": "application/pdf",
+    "txt": "text/plain",
+    "md": "text/markdown",
+    "csv": "text/csv",
+    "zip": "application/zip",
+}
+
 
 async def _presence(room_id: str) -> list[dict]:
     return [
@@ -267,6 +283,9 @@ async def upload_file(
         with span("http.upload"):
             with span("validate_file"):
                 original_name = os.path.basename(file.filename or "")
+                # strip control chars (null bytes, CR/LF, …) — never legitimate
+                # in a display name and unsafe in response headers
+                original_name = re.sub(r"[\x00-\x1f\x7f]", "_", original_name)
                 ext = os.path.splitext(original_name)[1][1:].lower()
                 if not ext or ext not in settings.allowed_ext_set:
                     result = "disallowed"
@@ -274,6 +293,11 @@ async def upload_file(
                         status_code=415,
                         content={"detail": f"file type .{ext or '?'} not allowed"},
                     )
+                # never trust the client-declared content type for serving:
+                # canonical MIME comes from the allowlisted extension
+                stored_mime = (
+                    file.content_type or CANONICAL_MIME.get(ext, "application/octet-stream")
+                )
 
             max_bytes = effective_max_file_mb(settings, room) * 1024 * 1024  # FR-13a
             file_id = new_uuid()
@@ -310,7 +334,7 @@ async def upload_file(
                 file_id=file_id,
                 file_path=dest_path,
                 file_size=size,
-                mime=file.content_type or "application/octet-stream",
+                mime=stored_mime,
             )
             db.add(item)
             from ..telemetry import items_total
@@ -370,9 +394,10 @@ def download_file(room_id: str, file_id: str, db: Session = Depends(get_db)):
     safe_name = re.sub(r'[\r\n"\';\\]', "_", item.file_name or "download")
     ascii_name = safe_name.encode("ascii", "replace").decode()
     quoted = quote(safe_name)
+    serving_ext = os.path.splitext(safe_name)[1][1:].lower()
     return FileResponse(
         item.file_path,
-        media_type=item.mime or "application/octet-stream",
+        media_type=CANONICAL_MIME.get(serving_ext, "application/octet-stream"),
         headers={
             "Content-Disposition": (
                 f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{quoted}'

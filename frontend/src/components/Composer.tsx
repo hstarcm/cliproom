@@ -70,6 +70,7 @@ export default function Composer({ onAddText, onUpload, maxFileMb = 10 }: Compos
           <input
             ref={fileInput}
             type="file"
+            accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.txt,.md,.csv,.zip"
             aria-label="Choose file to upload"
             onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
           />
