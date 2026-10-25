@@ -113,6 +113,13 @@ Generate production password hashes with `bash scripts/hash_password.sh '<passwo
 `AGENT_TOKEN`, `BASE_URL` (plus optional `GUEST_*` and the alertmanager bearer
 token in `ops/alertmanager/alertmanager.yml`).
 
+**Upload caps:** the global cap is `MAX_FILE_MB` (default 10 MB, set when
+creating the api container); when creating a room the operator may set a
+per-room cap of **1 – that global value** (the dashboard's "Max file size"
+field; blank = global). If you raise `MAX_FILE_MB`, also raise
+`NGINX_MAX_BODY_SIZE` (default `16m`) above it — nginx sits in front and
+rejects oversized request bodies before the app can answer with its clean 413.
+
 ### Tests — one command
 
 ```bash

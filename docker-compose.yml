@@ -5,6 +5,7 @@ services:
     build: ./backend
     environment:
       CLIPROOM_DEV: "1"
+      MAX_FILE_MB: ${MAX_FILE_MB:-10} # global upload cap; per-room caps (1..this) set at creation
       DB_PATH: /data/db/cliproom.db
       DATA_DIR: /data/files
       BASE_URL: ${BASE_URL:-http://localhost:8080}
@@ -30,6 +31,9 @@ services:
 
   frontend:
     build: ./frontend
+    environment:
+      # keep this above MAX_FILE_MB (nginx default suffix m = MB)
+      NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_MAX_BODY_SIZE:-16m}
     ports:
       - "8080:80"
     depends_on:

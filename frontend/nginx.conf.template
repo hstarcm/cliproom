@@ -6,7 +6,7 @@ server {
 
     # outer bound above the app's 10 MB upload cap (+ multipart overhead);
     # per-room caps (FR-13a) are enforced by the api with clean 413 JSON
-    client_max_body_size 16m;
+    client_max_body_size ${NGINX_CLIENT_MAX_BODY_SIZE};
 
     # security headers (SR-6)
     add_header X-Content-Type-Options nosniff always;
