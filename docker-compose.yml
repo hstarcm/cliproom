@@ -32,8 +32,10 @@ services:
   frontend:
     build: ./frontend
     environment:
-      # keep this above MAX_FILE_MB (nginx default suffix m = MB)
-      NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_MAX_BODY_SIZE:-16m}
+      # nginx body bound = MAX_FILE_MB + 6 MB automatically (see
+      # frontend/start.sh); set NGINX_MAX_BODY_SIZE to override explicitly
+      MAX_FILE_MB: ${MAX_FILE_MB:-10}
+      NGINX_MAX_BODY_SIZE: ${NGINX_MAX_BODY_SIZE:-}
     ports:
       - "8080:80"
     depends_on:

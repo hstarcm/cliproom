@@ -116,9 +116,10 @@ token in `ops/alertmanager/alertmanager.yml`).
 **Upload caps:** the global cap is `MAX_FILE_MB` (default 10 MB, set when
 creating the api container); when creating a room the operator may set a
 per-room cap of **1 – that global value** (the dashboard's "Max file size"
-field; blank = global). If you raise `MAX_FILE_MB`, also raise
-`NGINX_MAX_BODY_SIZE` (default `16m`) above it — nginx sits in front and
-rejects oversized request bodies before the app can answer with its clean 413.
+field; blank = global). The nginx request-body limit is **derived
+automatically** — `MAX_FILE_MB + 6 MB` of multipart-overhead margin — so it
+always sits above the app's caps; set `NGINX_MAX_BODY_SIZE` only if you want
+to pin it explicitly.
 
 ### Tests — one command
 
