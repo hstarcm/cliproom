@@ -71,5 +71,17 @@ def test_guest_cannot_delete_admin_room(client):
     assert client.get(f"/api/rooms/{admin_room}").status_code == 200  # untouched
 
 
+def test_guest_delete_via_room_id(client):
+    """The guest UI only holds the capability room_id — deletion by EITHER
+    identifier must work (regression for the broken dashboard Delete)."""
+    _login(client, "guest", "cliproom-dev-guest")
+    room_id = _create(client).json()["room_id"]
+    r = client.delete(f"/api/rooms/{room_id}", headers={"X-Requested-With": "fetch"})
+    assert r.status_code == 200
+    assert client.get(f"/api/rooms/{room_id}").status_code == 404
+    # and the guest slot is free again
+    assert _create(client).status_code == 200
+
+
 def test_unauthenticated_create_401(client):
     assert _create(client).status_code == 401

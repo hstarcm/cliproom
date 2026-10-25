@@ -94,12 +94,12 @@ export default function DashboardPage() {
       <h1>
         ClipRoom
         <span className={`role-badge ${roleHint === "guest" ? "guest" : "admin"}`}>
-          {roleHint === "guest" ? "Guest" : "Admin"}
+          {roleHint === "guest" ? "Demo" : "Admin"}
         </span>
       </h1>
       <p className="muted">
         {roleHint === "guest"
-          ? "Guest/demo account: at most one active room; you can delete only your own room."
+          ? "Demo account: at most one active room; you can delete only your own room."
           : "Admin: unlimited rooms, dashboard, force-terminate."}{" "}
         <button onClick={logout}>Sign out</button>
       </p>

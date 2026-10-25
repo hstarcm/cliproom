@@ -26,7 +26,7 @@ export default function LoginPage() {
   return (
     <div className="shell">
       <h1>ClipRoom</h1>
-      <p className="muted">Operator sign-in (admin or guest/demo account).</p>
+      <p className="muted">Operator sign-in (admin or demo account).</p>
       <div className="card" style={{ maxWidth: 380 }}>
         <form onSubmit={submit}>
           <p>

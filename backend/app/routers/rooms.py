@@ -16,6 +16,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, field_validator
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -156,7 +157,14 @@ def delete_room_route(
     session: dict = Depends(get_session_or_401),
     db: Session = Depends(get_db),
 ):
-    room = db.query(Room).filter(Room.room_uuid == room_uuid).first()
+    # accepts the surrogate uuid OR the capability room_id (the guest panel
+    # only ever holds the room_id); both are unguessable 128-bit values and
+    # the role checks below still gate who may delete what
+    room = (
+        db.query(Room)
+        .filter(or_(Room.room_uuid == room_uuid, Room.room_id == room_uuid))
+        .first()
+    )
     if room is None:
         raise HTTPException(status_code=404, detail="Not Found")
     if session["role"] != "admin" and not (
