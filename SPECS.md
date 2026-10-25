@@ -155,7 +155,9 @@ There are exactly two operator roles and one anonymous member role:
   absent → global cap). Uploads to that room are capped by the room value;
   violations → `413` naming the effective cap.
 - **FR-14 Authorship display.** Every item shows "added by \<name\>" in the
-  author's color, with a relative timestamp.
+  author's color, with a relative and an absolute timestamp (e.g. "2 min ago
+  · 25 Oct 2026, 14:02"); the room header and presence chip mark the
+  member's own name.
 - **FR-15 Delete-own-only (items).** `DELETE /api/rooms/{id}/items/{item_id}`
   must carry the creator's member token. Server compares SHA-256 hash: match →
   item (and file, if any) deleted; mismatch or missing header → **HTTP 403**
@@ -436,7 +438,8 @@ All tests pass with **one command**: `make test`
 
 **Frontend (Vitest):**
 - Login form + join screen validation (1–20 chars; persist to localStorage).
-- Item list rendering: author color, "added by", relative time.
+- Item list rendering: author color, "added by", relative + absolute time;
+  own-chip "(you)" marker in presence.
 - Delete button visibility: own items only.
 - WS client: event application + reconnect backoff (mocked socket).
 

@@ -25,3 +25,15 @@ export function formatExpiry(iso: string | null): string {
   if (!iso) return "forever";
   return new Date(iso.endsWith("Z") || iso.includes("+") ? iso : `${iso}Z`).toLocaleString();
 }
+
+/** Absolute local date+time for item cards, e.g. "25 Oct 2026, 17:30". */
+export function formatAbsolute(iso: string): string {
+  const d = new Date(iso.endsWith("Z") || iso.includes("+") ? iso : `${iso}Z`);
+  return d.toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

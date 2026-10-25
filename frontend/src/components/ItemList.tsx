@@ -1,6 +1,6 @@
 import type { Item } from "../lib/api";
 import { fileDownloadUrl } from "../lib/api";
-import { formatSize, relativeTime } from "../lib/format";
+import { formatAbsolute, formatSize, relativeTime } from "../lib/format";
 
 export interface ItemListProps {
   items: Item[];
@@ -27,7 +27,13 @@ export default function ItemList({ items, roomId, myMemberId, onDelete }: ItemLi
             <span className="author" style={{ color: item.author.color }}>
               added by {item.author.name}
             </span>
-            <span className="muted">{relativeTime(item.created_at)}</span>
+            <span
+              className="muted"
+              title={formatAbsolute(item.created_at)}
+              data-testid={`time-${item.item_id}`}
+            >
+              {relativeTime(item.created_at)} · {formatAbsolute(item.created_at)}
+            </span>
           </div>
           {item.kind === "text" ? (
             <pre style={{ whiteSpace: "pre-wrap", margin: "8px 0 0" }}>{item.content}</pre>

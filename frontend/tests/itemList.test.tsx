@@ -29,12 +29,15 @@ const fileItem: Item = {
 };
 
 describe("ItemList rendering (FR-14)", () => {
-  it("shows 'added by <name>' in the author's color with relative time", () => {
+  it("shows 'added by <name>' in the author's color with relative AND absolute time", () => {
     render(<ItemList items={[mine, theirs]} roomId="r" myMemberId="me" onDelete={vi.fn()} />);
     const byAlice = screen.getByText(/added by alice/i);
     expect(byAlice).toHaveStyle({ color: "#1F6FEB" });
     expect(screen.getByText(/added by bob/i)).toHaveStyle({ color: "#BF8700" });
-    expect(screen.getAllByText(/30s ago/i).length).toBeGreaterThanOrEqual(1);
+    const times = screen.getAllByText(/30s ago · /i);
+    expect(times.length).toBeGreaterThanOrEqual(1);
+    expect(times[0].textContent).toMatch(/\d{1,2} \w{3} \d{4}, \d{2}:\d{2}/);
+    expect(screen.getAllByTestId(/^time-/i).length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders file cards with name and size", () => {

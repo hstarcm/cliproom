@@ -31,6 +31,33 @@
       }
       button.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
       button.danger { color: #cf222e; }
+      .upload-box {
+        border: 1.5px dashed #9aa4af;
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-top: 12px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        background: #f6f8fa;
+      }
+      .upload-box-title { font-weight: 600; font-size: 14px; color: #1c1e21; }
+      .file-label {
+        cursor: pointer; padding: 7px 14px; border: 1px solid #6e7781;
+        border-radius: 8px; background: #ffffff; color: #1c1e21;
+        font-size: 14px; display: inline-block; min-width: 120px;
+      }
+      .file-label:hover { background: #eef1f4; }
+      .file-label input[type="file"] {
+        position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden;
+      }
+      button.upload-btn {
+        background: #1c1e21; border-color: #1c1e21; color: #ffffff;
+        font-weight: 600;
+      }
+      button.upload-btn:hover { background: #33383f; }
+      button.upload-btn:disabled { background: #8c959f; border-color: #8c959f; }
       textarea, input[type="text"], input[type="password"] {
         font: inherit; padding: 8px; border-radius: 8px;
         border: 1px solid #d0d7de; width: 100%; box-sizing: border-box;

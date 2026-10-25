@@ -150,7 +150,13 @@ export default function RoomPage() {
       {status === "live" && identity && (
         <>
           <div className="card">
-            <PresenceBar members={members} />
+            <p style={{ margin: "0 0 6px" }}>
+              You are in this room as{" "}
+              <b data-testid="my-name" style={{ color: identity.color }}>
+                {identity.name}
+              </b>
+            </p>
+            <PresenceBar members={members} meId={identity.member_id} />
           </div>
           <Composer onAddText={addText} onUpload={upload} />
           <ItemList

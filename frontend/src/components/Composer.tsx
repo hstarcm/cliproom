@@ -3,12 +3,14 @@ import { useRef, useState } from "react";
 export interface ComposerProps {
   onAddText: (content: string) => Promise<void>;
   onUpload: (file: File) => Promise<void>;
+  maxFileMb?: number;
 }
 
-export default function Composer({ onAddText, onUpload }: ComposerProps) {
+export default function Composer({ onAddText, onUpload, maxFileMb = 10 }: ComposerProps) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const addText = async () => {
@@ -31,12 +33,16 @@ export default function Composer({ onAddText, onUpload }: ComposerProps) {
 
   const upload = async () => {
     const file = fileInput.current?.files?.[0];
-    if (!file) return;
+    if (!file) {
+      setError("Choose a file first.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       await onUpload(file);
       if (fileInput.current) fileInput.current.value = "";
+      setFileName(null);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -52,15 +58,32 @@ export default function Composer({ onAddText, onUpload }: ComposerProps) {
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
+      <p style={{ margin: "8px 0 0" }}>
         <button className="primary" onClick={addText} disabled={busy}>
           Add clip
         </button>
-        <input ref={fileInput} type="file" aria-label="Upload file" />
-        <button onClick={upload} disabled={busy}>
+      </p>
+
+      <div className="upload-box" data-testid="upload-box">
+        <span className="upload-box-title">📎 Attach a file</span>
+        <label className="file-label">
+          <input
+            ref={fileInput}
+            type="file"
+            aria-label="Choose file to upload"
+            onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
+          />
+          {fileName ?? "Choose file…"}
+        </label>
+        <button className="upload-btn" onClick={upload} disabled={busy}>
           Upload
         </button>
+        <span className="muted">
+          up to {maxFileMb} MB · png, jpg, gif, webp, pdf, txt, md, csv, zip
+        </span>
+        {fileName && <span className="muted">selected: {fileName}</span>}
       </div>
+
       {error && (
         <p className="error" role="alert">
           {error}
