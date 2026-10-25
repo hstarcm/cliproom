@@ -12,6 +12,7 @@ export default function RoomPage() {
   const { roomId = "" } = useParams();
   const [status, setStatus] = useState<"loading" | "notfound" | "joining" | "live">("loading");
   const [identity, setIdentity] = useState<Identity | null>(null);
+  const [roomCapMb, setRoomCapMb] = useState<number>(10);
   const [items, setItems] = useState<Item[]>([]);
   const [members, setMembers] = useState<PresentMember[]>([]);
   const wsRef = useRef<RoomWS | null>(null);
@@ -65,7 +66,8 @@ export default function RoomPage() {
     let cancelled = false;
     (async () => {
       try {
-        await api.roomMeta(roomId);
+        const meta = await api.roomMeta(roomId);
+        setRoomCapMb(meta.max_file_mb ?? 10);
       } catch (e: any) {
         if (!cancelled) setStatus(e.status === 404 ? "notfound" : "notfound");
         return;
@@ -158,7 +160,7 @@ export default function RoomPage() {
             </p>
             <PresenceBar members={members} meId={identity.member_id} />
           </div>
-          <Composer onAddText={addText} onUpload={upload} />
+          <Composer onAddText={addText} onUpload={upload} maxFileMb={roomCapMb} />
           <ItemList
             items={items}
             roomId={roomId}

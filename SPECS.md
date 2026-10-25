@@ -301,11 +301,11 @@ cliproom/
 |---|---|---|---|
 | POST | `/api/admin/login` | none | `{username, password}` → session cookie + `{role: "admin"\|"guest"}`; rate-limited |
 | POST | `/api/admin/logout` | session | destroy session |
-| GET | `/api/admin/rooms` | admin only | active rooms: `[{room_uuid, room_id, item_count, disk_usage, expires_at, created_by}]` (room_id exposed to the authenticated admin for dashboard room links) |
+| GET | `/api/admin/rooms` | admin only | active rooms: `[{room_uuid, room_id, share_url, item_count, disk_usage, expires_at, created_by}]` (room_id + share_url exposed to the authenticated admin for dashboard room links/QR) |
 | DELETE | `/api/admin/rooms/{room_uuid}` | admin only | force-terminate any room + files |
 | POST | `/api/rooms` | admin or guest session | create room `{ttl: "1h"\|"24h"\|"7d"\|"<n>m|h|d"\|"forever", max_file_mb?: int}` → `{room_id, share_url, expires_at}`; guest with an active room → `409` |
 | DELETE | `/api/rooms/{room_uuid}` | admin (any) or guest (own) | terminate room + files; members immediately get 404 |
-| GET | `/api/rooms/{room_id}` | member (link) | room metadata `{expires_at, item_count}` |
+| GET | `/api/rooms/{room_id}` | member (link) | room metadata `{expires_at, item_count, max_file_mb}` (max_file_mb = effective per-room/global cap, FR-13a) |
 | POST | `/api/rooms/{room_id}/join` | member token | `{name}` → `{member_id, name, color}` |
 | GET | `/api/rooms/{room_id}/items` | member (link) | full state `{items, members_present}` |
 | POST | `/api/rooms/{room_id}/items/text` | member token | `{content}` → item |

@@ -66,6 +66,19 @@
       }
       button.upload-btn:hover { background: #33383f; }
       button.upload-btn:disabled { background: #8c959f; border-color: #8c959f; }
+      .upload-warn {
+        display: block; width: 100%; color: #cf222e; font-weight: 600;
+        font-size: 12.5px; margin-top: 2px;
+      }
+      .modal-overlay {
+        position: fixed; inset: 0; background: rgba(28,30,33,0.55);
+        display: flex; align-items: center; justify-content: center; z-index: 50;
+      }
+      .modal-card {
+        background: #fff; border-radius: 14px; padding: 22px 26px;
+        max-width: 420px; width: calc(100vw - 40px); text-align: center;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+      }
       textarea, input[type="text"], input[type="password"] {
         font: inherit; padding: 8px; border-radius: 8px;
         border: 1px solid #d0d7de; width: 100%; box-sizing: border-box;

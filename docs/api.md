@@ -23,11 +23,11 @@ authoritative on conflict.
 |---|---|---|---|
 | POST | `/api/admin/login` | none | `{username, password}` → session cookie + `{role: "admin"\|"guest"}`; generic errors; rate-limited 5/15min/IP |
 | POST | `/api/admin/logout` | session | destroy session server-side |
-| GET | `/api/admin/rooms` | admin only | active rooms `[{room_uuid, room_id, item_count, disk_usage, expires_at, created_by}]` |
+| GET | `/api/admin/rooms` | admin only | active rooms `[{room_uuid, room_id, share_url, item_count, disk_usage, expires_at, created_by}]` |
 | DELETE | `/api/admin/rooms/{room_uuid}` | admin only | force-terminate any room + files (members then get 404) |
 | POST | `/api/rooms` | admin or guest session | `{ttl: "1h"\|"24h"\|"7d"\|"<n>m\|h\|d"\|"forever", max_file_mb?: int}` → `{room_id, share_url, expires_at}` (expires_at null for forever); guest with active room → 409; custom TTL bounded 1m–365d; max_file_mb 1–global cap |
 | DELETE | `/api/rooms/{room_uuid}` | admin (any) or guest (own) | terminate room + files |
-| GET | `/api/rooms/{room_id}` | member (link) | `{expires_at, item_count}` |
+| GET | `/api/rooms/{room_id}` | member (link) | `{expires_at, item_count, max_file_mb}` — max_file_mb is the room's effective upload cap |
 | POST | `/api/rooms/{room_id}/join` | member token | `{name}` → `{member_id, name, color}` |
 | GET | `/api/rooms/{room_id}/items` | member (link) | full state `{items, members_present}` |
 | POST | `/api/rooms/{room_id}/items/text` | member token | `{content}` → item |

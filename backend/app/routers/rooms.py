@@ -172,9 +172,14 @@ def delete_room_route(
 @router.get("/rooms/{room_id}")
 def room_meta(room_id: str, db: Session = Depends(get_db)):
     room = get_room_or_404(room_id, db)
+    from ..rooms import effective_max_file_mb
+
     return {
         "expires_at": iso_utc(room.expires_at),
         "item_count": db.query(Item).filter(Item.room_id == room.room_id).count(),
+        # effective cap for this room (room value or global) so members'
+        # UI shows the real limit (FR-13a)
+        "max_file_mb": effective_max_file_mb(get_settings(), room),
     }
 
 

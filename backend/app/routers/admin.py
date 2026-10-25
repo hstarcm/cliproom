@@ -92,6 +92,7 @@ def list_rooms(db: Session = Depends(get_db)):
             {
                 "room_uuid": r.room_uuid,
                 "room_id": r.room_id,  # capability id — admin may open the room
+                "share_url": f"{get_settings().base_url}/r/{r.room_id}",
                 "item_count": item_count,
                 "disk_usage": room_disk_usage(db, r.room_id),
                 "expires_at": iso_utc(r.expires_at),

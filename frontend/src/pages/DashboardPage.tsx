@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { formatExpiry } from "../lib/format";
+import QrModal from "../components/QrModal";
 
 type AdminRoom = Awaited<ReturnType<typeof api.adminRooms>>[number];
 
@@ -18,6 +19,7 @@ export default function DashboardPage() {
   const [maxMb, setMaxMb] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [guestRoom, setGuestRoom] = useState<{ room_id: string; share_url: string } | null>(null);
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -194,7 +196,14 @@ export default function DashboardPage() {
                         title="Open this room"
                       >
                         {r.room_uuid}
-                      </a>
+                      </a>{" "}
+                      <button
+                        style={{ fontSize: 12, padding: "3px 8px" }}
+                        title="Show QR code of the share link"
+                        onClick={() => setQrUrl(r.share_url)}
+                      >
+                        QR
+                      </button>
                     </td>
                     <td>{r.item_count}</td>
                     <td>{(r.disk_usage / 1024).toFixed(1)} KB</td>
@@ -212,6 +221,8 @@ export default function DashboardPage() {
           )}
         </div>
       )}
+
+      {qrUrl && <QrModal shareUrl={qrUrl} onClose={() => setQrUrl(null)} />}
     </div>
   );
 }

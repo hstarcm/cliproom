@@ -64,9 +64,10 @@ export const api = {
     return (await json(r)) as Array<{
       room_uuid: string;
       room_id: string;
+      share_url: string;
       item_count: number;
       disk_usage: number;
-      expires_at: string;
+      expires_at: string | null;
       created_by: string;
     }>;
   },
@@ -103,7 +104,7 @@ export const api = {
 
   roomMeta: async (roomId: string) => {
     const r = await fetch(`/api/rooms/${roomId}`);
-    return (await json(r)) as { expires_at: string; item_count: number };
+    return (await json(r)) as { expires_at: string | null; item_count: number; max_file_mb: number };
   },
 
   join: async (roomId: string, name: string, token: string) => {

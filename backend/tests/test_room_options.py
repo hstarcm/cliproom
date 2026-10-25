@@ -147,3 +147,11 @@ def test_per_room_cap_validation(client):
     r = _create(client, {"ttl": "1h", "max_file_mb": 999})  # > global 10
     assert r.status_code == 422
     assert "global cap" in r.text
+
+
+def test_room_meta_exposes_effective_cap(client):
+    operator_login(client, "admin", "cliproom-dev-admin")
+    capped = _create(client, {"ttl": "1h", "max_file_mb": 5}).json()["room_id"]
+    default = _create(client, {"ttl": "1h"}).json()["room_id"]
+    assert client.get(f"/api/rooms/{capped}").json()["max_file_mb"] == 5
+    assert client.get(f"/api/rooms/{default}").json()["max_file_mb"] == 10

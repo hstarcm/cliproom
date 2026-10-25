@@ -88,8 +88,11 @@ export default function Composer({ onAddText, onUpload, maxFileMb = 10 }: Compos
         </button>
         <span className="muted">
           up to {maxFileMb} MB · images, docs &amp; Office, code &amp; config files,
-          archives (zip/7z/rar) · executables, HTML/SVG and macro-enabled
-          Office files are rejected
+          archives (zip/7z/rar)
+        </span>
+        <span className="upload-warn">
+          ⚠ Rejected: executables (.exe/.bat/…), server code (.php/.jsp), HTML/SVG,
+          macro-enabled Office (.docm/.xlsm/.pptm)
         </span>
         {fileName && <span className="muted">selected: {fileName}</span>}
       </div>
