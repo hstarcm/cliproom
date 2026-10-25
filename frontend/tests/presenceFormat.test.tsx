@@ -27,8 +27,15 @@ describe("PresenceBar '(you)' marker", () => {
 });
 
 describe("formatAbsolute (item timestamps)", () => {
-  it("formats Z-suffixed and bare ISO strings", () => {
-    expect(formatAbsolute("2026-10-25T09:05:00Z")).toMatch(/\d{1,2} \w{3} \d{4}, \d{2}:\d{2}/);
-    expect(formatAbsolute("2026-10-25T09:05:00")).toMatch(/\d{1,2} \w{3} \d{4}/);
+  const OPTS = {
+    day: "numeric" as const, month: "short" as const, year: "numeric" as const,
+    hour: "2-digit" as const, minute: "2-digit" as const,
+  };
+
+  it("formats Z-suffixed and bare ISO strings (locale-agnostic)", () => {
+    const expectLike = (iso: string, source: string) =>
+      expect(formatAbsolute(iso)).toBe(new Date(source).toLocaleString(undefined, OPTS));
+    expectLike("2026-10-25T09:05:00Z", "2026-10-25T09:05:00Z");
+    expectLike("2026-10-25T09:05:00", "2026-10-25T09:05:00Z");
   });
 });

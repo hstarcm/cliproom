@@ -36,7 +36,11 @@ describe("ItemList rendering (FR-14)", () => {
     expect(screen.getByText(/added by bob/i)).toHaveStyle({ color: "#BF8700" });
     const times = screen.getAllByText(/30s ago · /i);
     expect(times.length).toBeGreaterThanOrEqual(1);
-    expect(times[0].textContent).toMatch(/\d{1,2} \w{3} \d{4}, \d{2}:\d{2}/);
+    // locale-agnostic: mirror the formatter's own options for the expectation
+    const expected = new Date(mine.created_at).toLocaleString(undefined, {
+      day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+    });
+    expect(times[0].textContent).toContain(expected);
     expect(screen.getAllByTestId(/^time-/i).length).toBeGreaterThanOrEqual(1);
   });
 
