@@ -41,8 +41,12 @@ with their files.
   (unlimited rooms, dashboard, force-terminate) and an optional **guest/demo
   account** (exactly one active room, deletable by itself only) — both
   configured via environment variables, never stored in the app.
-- Rooms have a TTL (1h / 24h / 7d, extended on activity). A background sweeper
-  deletes expired rooms, their files, and orphaned uploads.
+- Rooms have a TTL chosen by the operator at creation — the `1h` / `24h` /
+  `7d` presets, any custom duration (`45m`, `12h`, `30d`…), or `forever`
+  (no auto-expiry; ends only by manual deletion). Timed rooms extend on
+  activity. A background sweeper deletes expired rooms, their files, and
+  orphaned uploads. The operator can also set a per-room upload size cap at
+  creation (otherwise the global default applies).
 
 ## How ClipRoom differs from existing open-source tools
 

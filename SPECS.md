@@ -246,7 +246,7 @@ There are exactly two operator roles and one anonymous member role:
 | `SESSION_SECRET` | session cookie signing | required |
 | `AGENT_TOKEN` | on-call agent → internal endpoints | required |
 | `BASE_URL` | used to build `share_url` (e.g. `https://abc.dedyn.io`) | required |
-| `MAX_FILE_MB` | upload cap | `10` |
+| `MAX_FILE_MB` | global upload cap (per-room override: FR-13a) | `10` |
 | `ALLOWED_EXTENSIONS` | upload allowlist | see FR-13 |
 | `DATA_DIR`, `DB_PATH` | storage locations | `/data/files`, `/data/cliproom.db` |
 | `SWEEPER_INTERVAL_MIN` | sweeper period | `60` |
@@ -327,7 +327,9 @@ no user enumeration anywhere.
 ### Data model (SQLite)
 
 - `rooms(room_id PK, room_uuid, created_by TEXT CHECK(created_by IN
-  ('admin','guest')), created_at, ttl_seconds, expires_at, last_activity_at)`
+  ('admin','guest')), created_at, ttl_seconds NULL, expires_at NULL,
+  max_file_mb NULL, last_activity_at)` — NULL ttl/expires = forever (FR-19);
+  NULL max_file_mb = global cap (FR-13a)
 - `members(member_id PK, room_id FK, name, color, token_hash UNIQUE, joined_at)`
 - `items(item_id PK, room_id FK, author_member_id FK, kind, content, file_name,
   file_path, file_size, mime, created_at)`
@@ -407,7 +409,11 @@ All tests pass with **one command**: `make test`
 **Backend unit (pytest):**
 - ID generation: length ≥22, base62 alphabet, uniqueness over 10k draws.
 - Expiry math: TTL extension on activity; sweeper deletes expired, keeps
-  active; orphan-file detection.
+  active (forever rooms never swept); orphan-file detection.
+- Room options (AC20): TTL parser (presets, `<n>m|h|d` 1m–365d, forever,
+  rejects invalid); forever semantics (null expiry end-to-end, sweeper-proof,
+  admin-terminable, occupies guest's slot); per-room `max_file_mb`
+  (clamped to global cap, enforced with room-specific 413).
 - Upload validation: size cap, allowlist, correct rejection codes (413/415).
 - Item ownership: delete own → 200; other's → 403; missing token → 403;
   constant-time hash compare.

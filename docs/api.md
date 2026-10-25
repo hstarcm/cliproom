@@ -31,7 +31,7 @@ authoritative on conflict.
 | POST | `/api/rooms/{room_id}/join` | member token | `{name}` → `{member_id, name, color}` |
 | GET | `/api/rooms/{room_id}/items` | member (link) | full state `{items, members_present}` |
 | POST | `/api/rooms/{room_id}/items/text` | member token | `{content}` → item |
-| POST | `/api/rooms/{room_id}/items/file` | member token | multipart file → item |
+| POST | `/api/rooms/{room_id}/items/file` | member token | multipart file → item; size capped by the room's `max_file_mb` when set, else the global `MAX_FILE_MB` |
 | DELETE | `/api/rooms/{room_id}/items/{item_id}` | creator's token | delete-own-only (200 / 403) |
 | POST | `/api/rooms/{room_id}/ws-ticket` | member token | one-time ticket, 60 s TTL |
 | POST | `/api/agent/on-alert` | `AGENT_TOKEN` | Alertmanager webhook target (SPECS §7) |
@@ -61,7 +61,7 @@ Tickets are single-use and expire in 60 s.
 
 ## Data model (SQLite, WAL)
 
-- `rooms(room_id PK, room_uuid, created_by TEXT CHECK(created_by IN ('admin','guest')), created_at, ttl_seconds, expires_at, last_activity_at)`
+- `rooms(room_id PK, room_uuid, created_by TEXT CHECK(created_by IN ('admin','guest')), created_at, ttl_seconds NULL, expires_at NULL, max_file_mb NULL, last_activity_at)` — NULL `ttl_seconds`/`expires_at` = forever room (FR-19); NULL `max_file_mb` = global cap (FR-13a)
 - `members(member_id PK, room_id FK, name, color, token_hash UNIQUE, joined_at)`
 - `items(item_id PK, room_id FK, author_member_id FK, kind, content, file_name, file_path, file_size, mime, created_at)`
 - `sweeper_runs(id PK, started_at, finished_at, rooms_deleted, files_deleted, orphans_deleted, status)`
