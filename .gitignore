@@ -43,3 +43,6 @@ coverage/
 *~
 *.bak
 *.saved.bak
+
+# personal/local notes — never publish
+TODO.md
